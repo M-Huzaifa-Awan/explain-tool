@@ -1,0 +1,19 @@
+# Claude Code local session/config — not part of the project
+.claude/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Scratch test files
+t1.json
+t2.json
