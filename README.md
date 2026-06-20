@@ -12,12 +12,12 @@ Author: Muhammad Huzaifa Awan
 ```
 ╭─ Bash  ·  🔴 HIGH RISK ──────────────────────────────────╮
 │                                                          │
-│ $ rm -rf node_modules                                    │
-│                                                          │
 │ Does    Permanently deletes node_modules and everything  │
 │         inside it. This cannot be undone.                │
 │ Needs   shell / terminal access                          │
 │ Risk    recursive force delete                           │
+│                                                          │
+│ cmd: rm -rf node_modules                                 │
 │                                                          │
 ╰──────────────────────────────────────────────────────────╯
 ```

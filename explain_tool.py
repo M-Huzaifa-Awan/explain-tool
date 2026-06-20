@@ -312,7 +312,7 @@ def analyze(tool_name, ti):
 
 def detail_line(tool_name, ti):
     if tool_name in ("Bash", "PowerShell"):
-        return "$ " + " ".join(ti.get("command", "").split())[:300]
+        return " ".join(ti.get("command", "").split())[:300]
     if tool_name in ("Write", "Edit", "MultiEdit", "Read"):
         return ti.get("file_path", "")
     if tool_name == "WebFetch":
@@ -360,16 +360,21 @@ def render_box(tool_name, detail, does, wants, risk, reason):
     if _dwidth(header) > INNER - 1:           # keep the top border from breaking
         header = header[:INNER - 2]
 
+    # Explanation leads: the plain-English summary is the first thing shown.
     body = [""]
-    if detail:
-        d = detail if _dwidth(detail) <= INNER else detail[:INNER - 1] + "…"
-        body.append(d)
-        body.append("")
     for label, value in (("Does", does), ("Needs", wants), ("Risk", reason)):
         wrapped = _wrap(value, INNER - LABEL_W - 2)
         body.append(f"{label:<{LABEL_W}}  {wrapped[0]}")
         for cont in wrapped[1:]:
             body.append(" " * (LABEL_W + 2) + cont)
+    # The raw command/detail is de-emphasised at the bottom (Claude Code's own
+    # prompt shows it in full, so this is just a short echo for reference).
+    if detail:
+        prefix = "cmd: " if tool_name in ("Bash", "PowerShell") else ""
+        line = prefix + detail
+        d = line if _dwidth(line) <= INNER else line[:INNER - 1] + "…"
+        body.append("")
+        body.append(d)
     body.append("")
 
     dashes = "─" * max(0, INNER - 1 - _dwidth(header))
