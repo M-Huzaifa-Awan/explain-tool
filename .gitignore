@@ -17,3 +17,5 @@ Thumbs.db
 # Scratch test files
 t1.json
 t2.json
+_testhome/
+*.bak

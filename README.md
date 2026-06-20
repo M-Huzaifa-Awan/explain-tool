@@ -33,9 +33,36 @@ returns a permission decision, so your normal allow / deny prompt is untouched.
 If anything goes wrong it stays silent and exits cleanly, so it can never block
 your work.
 
-## Install
+## Install (one command)
 
-1. Put the script somewhere stable and make it executable:
+Download or clone this repo, then run the installer:
+
+```bash
+git clone https://github.com/M-Huzaifa-Awan/explain-tool.git
+cd explain-tool
+python install.py
+```
+
+On macOS / Linux use `python3 install.py` if `python` isn't found.
+
+That's it. The installer copies the hook into `~/.claude/hooks/` and registers
+it in `~/.claude/settings.json` for you — no JSON editing. It backs up any
+existing settings to `settings.json.bak`, never touches your other hooks, and
+running it again just updates in place (no duplicates).
+
+Then **start a new Claude Code session** (hooks load at startup) and run
+`/hooks` to confirm it's registered.
+
+To remove it later:
+
+```bash
+python install.py --uninstall
+```
+
+<details>
+<summary>Manual install (if you prefer to do it by hand)</summary>
+
+1. Copy the script and make it executable:
 
    ```bash
    mkdir -p ~/.claude/hooks
@@ -43,8 +70,8 @@ your work.
    chmod +x ~/.claude/hooks/explain_tool.py
    ```
 
-2. Register the hook in `~/.claude/settings.json` (merge this into the existing
-   file if you already have one):
+2. Register the hook in `~/.claude/settings.json` (merge into the existing file
+   if you already have one):
 
    ```json
    {
@@ -67,8 +94,9 @@ your work.
    On Windows, use `python` instead of `python3` and point at
    `%USERPROFILE%\.claude\hooks\explain_tool.py`.
 
-3. Start a new Claude Code session. Hooks load at session start, so existing
-   sessions will not pick it up. Run `/hooks` to confirm it is registered.
+3. Start a new Claude Code session and run `/hooks` to confirm.
+
+</details>
 
 ## Test it without Claude Code
 
