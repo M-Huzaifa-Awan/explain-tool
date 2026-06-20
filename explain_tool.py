@@ -9,8 +9,10 @@ It reads the hook JSON on stdin and prints a single JSON object with a
 normal allow / deny prompt is left exactly as it was. On any error it stays
 silent (exit 0, no output) so it can never block your workflow.
 
-Wire it up on the PermissionRequest event (fires only when you are actually
-asked) or PreToolUse (fires on every tool call). See README for settings.
+Wire it up on the PreToolUse event (fires on every tool call). Note: a
+PermissionRequest hook's systemMessage is NOT rendered in the permission
+dialog, so PreToolUse is the event that actually surfaces the explanation.
+See README for settings.
 """
 
 import json
@@ -322,6 +324,64 @@ def detail_line(tool_name, ti):
     return ""
 
 
+# --- rendering: a tidy box with an emoji risk badge ------------------------
+RISK_EMOJI = {LOW: "\U0001F7E2", MEDIUM: "\U0001F7E1", HIGH: "\U0001F534"}
+WIDE = set("\U0001F7E2\U0001F7E1\U0001F534")  # risk emoji render two columns
+DOT = "·"
+INNER = 56          # content width inside the box
+LABEL_W = 6         # width of the Does / Needs / Risk label column
+
+
+def _dwidth(s):
+    # Display width: the risk emoji take two terminal columns, the rest one.
+    return sum(2 if ch in WIDE else 1 for ch in s)
+
+
+def _pad(s, width):
+    return s + " " * max(0, width - _dwidth(s))
+
+
+def _wrap(text, width):
+    out, cur = [], ""
+    for word in text.split():
+        if cur and _dwidth(cur) + 1 + _dwidth(word) > width:
+            out.append(cur)
+            cur = word
+        else:
+            cur = word if not cur else cur + " " + word
+    if cur:
+        out.append(cur)
+    return out or [""]
+
+
+def render_box(tool_name, detail, does, wants, risk, reason):
+    emoji = RISK_EMOJI.get(risk, "")
+    header = f"{tool_name}  {DOT}  {emoji} {risk} RISK"
+    if _dwidth(header) > INNER - 1:           # keep the top border from breaking
+        header = header[:INNER - 2]
+
+    body = [""]
+    if detail:
+        d = detail if _dwidth(detail) <= INNER else detail[:INNER - 1] + "…"
+        body.append(d)
+        body.append("")
+    for label, value in (("Does", does), ("Needs", wants), ("Risk", reason)):
+        wrapped = _wrap(value, INNER - LABEL_W - 2)
+        body.append(f"{label:<{LABEL_W}}  {wrapped[0]}")
+        for cont in wrapped[1:]:
+            body.append(" " * (LABEL_W + 2) + cont)
+    body.append("")
+
+    dashes = "─" * max(0, INNER - 1 - _dwidth(header))
+    top = f"╭─ {header} {dashes}╮"
+    bottom = "╰" + "─" * (INNER + 2) + "╯"
+    middle = [f"│ {_pad(line, INNER)} │" for line in body]
+    box = "\n".join([top, *middle, bottom])
+    # Wrap in a fenced code block so the VSCode chat panel renders it in a
+    # fixed-width font instead of reflowing it into a jagged mess.
+    return f"```\n{box}\n```"
+
+
 def main():
     try:
         raw = sys.stdin.read()
@@ -335,15 +395,7 @@ def main():
 
         does, wants, risk, reason = analyze(tool_name, ti)
         detail = detail_line(tool_name, ti)
-
-        lines = [f"[ Permission check \u00b7 {tool_name} ]"]
-        if detail:
-            lines.append(f"  {detail}")
-        lines.append("")
-        lines.append(f"  Does:  {does}")
-        lines.append(f"  Wants: {wants}")
-        lines.append(f"  Risk:  {risk} ({reason})")
-        message = "\n".join(lines)
+        message = render_box(tool_name, detail, does, wants, risk, reason)
 
         # Only systemMessage, no decision -> normal allow/deny prompt is untouched.
         sys.stdout.write(json.dumps({"systemMessage": message}))

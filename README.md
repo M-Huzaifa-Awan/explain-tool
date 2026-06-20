@@ -10,13 +10,19 @@ Author: Muhammad Huzaifa Awan
 ## What it shows
 
 ```
-[ Permission check · Bash ]
-  $ rm -rf node_modules
-
-  Does:  Permanently deletes node_modules and everything inside it. This cannot be undone.
-  Wants: shell / terminal access
-  Risk:  HIGH (recursive force delete)
+╭─ Bash  ·  🔴 HIGH RISK ──────────────────────────────────╮
+│                                                          │
+│ $ rm -rf node_modules                                    │
+│                                                          │
+│ Does    Permanently deletes node_modules and everything  │
+│         inside it. This cannot be undone.                │
+│ Needs   shell / terminal access                          │
+│ Risk    recursive force delete                           │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
 ```
+
+Risk shows at a glance with a colored badge: 🟢 LOW, 🟡 MEDIUM, 🔴 HIGH.
 
 It covers Bash and PowerShell (with risk detection for things like `rm -rf` /
 `Remove-Item -Recurse -Force`, `sudo`, force push, piping a remote script into a
@@ -26,12 +32,17 @@ secret-file detection works the same on Windows as on macOS and Linux.
 
 ## How it works
 
-The hook runs on the `PermissionRequest` event, which fires only when Claude
-Code is about to ask you to allow or deny something. It reads the tool name and
-inputs, classifies the action, and returns a single `systemMessage`. It never
+The hook runs on the `PreToolUse` event, which fires on every tool call. It
+reads the tool name and inputs, classifies the action, and returns a single
+`systemMessage` that Claude Code shows you before the tool runs. It never
 returns a permission decision, so your normal allow / deny prompt is untouched.
 If anything goes wrong it stays silent and exits cleanly, so it can never block
 your work.
+
+> **Why not `PermissionRequest`?** That event only fires when you're actually
+> asked, which sounds ideal — but a `PermissionRequest` hook's `systemMessage`
+> is **not rendered in the permission dialog**, so the explanation never shows.
+> `PreToolUse` is the event that actually surfaces the message.
 
 ## Install (one command)
 
@@ -76,7 +87,7 @@ python install.py --uninstall
    ```json
    {
      "hooks": {
-       "PermissionRequest": [
+       "PreToolUse": [
          {
            "matcher": "*",
            "hooks": [
@@ -111,8 +122,8 @@ You should get a JSON object containing a `systemMessage`.
 
 - Requires Python 3 (standard library only, no dependencies). Works on Windows,
   macOS, and Linux.
-- To explain every tool call, including ones already on your allow list, change
-  the event from `PermissionRequest` to `PreToolUse`. The same script works for
-  both. `PermissionRequest` is the recommended default because it only speaks up
-  when you are actually being asked.
+- The hook uses the `PreToolUse` event, so it explains every tool call —
+  including ones already on your allow list. (`PermissionRequest` would only
+  fire when you're prompted, but its `systemMessage` doesn't render in the
+  dialog, so it can't show the explanation.)
 - The risk labels are a guide, not a guarantee. Always read the command itself.

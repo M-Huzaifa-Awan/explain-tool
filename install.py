@@ -18,7 +18,7 @@ import shutil
 import sys
 
 HOOK_FILENAME = "explain_tool.py"
-EVENT = "PermissionRequest"  # only speaks up when you're actually asked
+EVENT = "PreToolUse"  # fires on every tool call; its systemMessage is shown to you
 
 
 def claude_dir():
